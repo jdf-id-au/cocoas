@@ -91,7 +91,7 @@
                ,(or fail `(error "The ObjC call to ~a failed." ',(car init)))
                (unwind-protect
                     (with-objects ,bindings ,@body)
-                 (objc:free ,var)))))
+                 (objc:autorelease ,var)))))
       `(progn ,@body)))
 
 (defmacro with-foundation-objects (bindings &body body)

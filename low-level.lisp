@@ -202,3 +202,6 @@
 
 (defun free (id)
   (call id "dealloc" :void))
+
+(defun autorelease (id)
+  (call id "autorelease" id))

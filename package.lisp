@@ -46,7 +46,8 @@
    #:event-mask
    #:default-run-loop-mode
    #:call
-   #:free))
+   #:free
+   #:autorelease))
 
 (defpackage #:org.shirakumo.cocoas
   (:use #:cl)
@@ -62,6 +63,7 @@
    #:nsinteger
    #:release
    #:free
+   #:autorelease
    #:app
    #:call)
   (:export
@@ -73,6 +75,7 @@
    #:nsinteger
    #:release
    #:free
+   #:autorelease
    #:app
    #:call)
   (:export
