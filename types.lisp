@@ -17,12 +17,18 @@
 
 (defmethod cffi:translate-from-foreign (ptr (type nsstring))
   (unless (cffi:null-pointer-p ptr)
-    (unwind-protect (objc:call "NSString" "UTF8String" :string)
-      (objc:free ptr))))
+    (unwind-protect (objc:call ptr "UTF8String" :string)
+      ;;(format t "leaking ~a ~a~%" type ptr)
+      (objc:autorelease ptr)
+      ;;(objc:free ptr)
+      )))
 
 (defmethod cffi:free-translated-object (ptr (type nsstring) free-p)
   (when free-p
-    (objc:free ptr)))
+    ;;(format t "leaking ~a ~a~%" type ptr)
+    (objc:autorelease ptr)
+    ;;(objc:free ptr)
+    ))
 
 (cffi:define-foreign-type cftype ()
   ()

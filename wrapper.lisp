@@ -55,6 +55,9 @@
                          (write-char (char-downcase char) out))
                    (setf upcase NIL))))))))
 
+(defun to-set-method-name (name)
+  (to-method-name (make-symbol (concatenate 'string "set-" (string name)))))
+
 (defmacro define-objcfun (class mname rettype &body args)
   (destructuring-bind (name &optional (method (to-method-name (if (listp mname) (first mname) mname)))) 
       (if (listp mname) mname
@@ -72,16 +75,27 @@
                   ,(or rettype 'objc:id)))))
 
 (defmacro define-objcmethod (name rettype &body args)
-  (destructuring-bind (name &optional method) (if (listp name) name (list name))
-    (unless method
-      (setf method (to-method-name name)))
-    (let ((self (gensym "SELF")))
-      `(defun ,name (,self ,@(loop for (name) in args collect name))
-         (objc:call ,self ,method
-                    ,@(loop for (name type) in args
-                            collect type
-                            collect name)
-                    ,(or rettype 'objc:id))))))
+  (destructuring-bind
+      (name &optional method) (if (listp name) name (list name))
+    (if (listp name)
+        (if (eq (car name) 'setf)
+            (progn
+              (unless method (setf method (to-set-method-name (cadr name))))
+              (if (cdr args) (error "Only one argument allowed ~a" args))
+              (let ((self (gensym "SELF")))
+                `(defun ,name (,(caar args) ,self)
+                   (objc:call ,self ,method ,(cadar args) ,(caar args)
+                              ,(or rettype 'objc:id)))))
+            (error "Invalid call ~a" name))
+        (progn
+          (unless method (setf method (to-method-name name)))
+          (let ((self (gensym "SELF")))
+            `(defun ,name (,self ,@(loop for (name) in args collect name))
+               (objc:call ,self ,method
+                          ,@(loop for (name type) in args
+                                  collect type
+                                  collect name)
+                          ,(or rettype 'objc:id))))))))
 
 (defmacro with-objects (bindings &body body)
   (if bindings
@@ -91,7 +105,7 @@
                ,(or fail `(error "The ObjC call to ~a failed." ',(car init)))
                (unwind-protect
                     (with-objects ,bindings ,@body)
-                 (objc:autorelease ,var)))))
+                 (objc:autorelease ,var))))) ; changed from objc:free
       `(progn ,@body)))
 
 (defmacro with-foundation-objects (bindings &body body)
@@ -110,7 +124,7 @@
                          (null (objc:call "NSDate" "distantPast"))
                          ((eql T) (objc:call "NSDate" "distantFuture"))
                          (real (objc:call "NSDate" "dateWithTimeIntervalSinceNow:"
-                                          :double (double timeout 0d0))))))
+                                          :double (double timeout 0d0)))))) ; FIXME no fn double ?
     (let ((event (objc:call app "nextEventMatchingMask:untilDate:inMode:dequeue:"
                             objc:event-mask :any
                             :pointer date

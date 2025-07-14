@@ -25,3 +25,4 @@
                     (setf (gethash "K" tbl) 1)
                     (setf (gethash "0" tbl) 2)
                     tbl)))
+;; (test-types)
